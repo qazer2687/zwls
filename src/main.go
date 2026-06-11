@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"strings"
 )
 
 var mu sync.RWMutex
@@ -49,6 +50,13 @@ func handleShorten(
 
 	// convert URL to zwc string
 	urlShortened := encode(hash(url))
+
+	// only allow http and https links
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		fmt.Printf("[WARNING] rejected %s as invalid URL\n", url)
+	    http.Error(w, "invalid url", http.StatusBadRequest)
+	    return
+	}
 
 	fmt.Fprintf(w, urlShortened)
 
