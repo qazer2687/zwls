@@ -78,6 +78,13 @@ func handleShorten(
 
 	// block readers and writers
 	mu.Lock()
+
+	// add limit to the store to prevent OOM
+	if len(store) >= 1000 {
+	    http.Error(w, "store is full", http.StatusServiceUnavailable)
+	    return
+	}
+	
 	store[slug] = url
 	mu.Unlock()
 	
