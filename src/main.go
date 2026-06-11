@@ -5,8 +5,10 @@ import (
 	"hash/fnv"
 	"io"
 	"net/http"
+	"sync"
 )
 
+var mu sync.RWMutex
 var store = make(map[string]string)
 
 func main() {
@@ -50,7 +52,11 @@ func handleShorten(
 
 	fmt.Fprintf(w, urlShortened)
 
+	// block readers and writers
+	mu.Lock()
 	store[urlShortened] = url
+	mu.Unlock()
+	
 	fmt.Printf("[INFO] stored %s\n", url)
 }
 
@@ -62,8 +68,11 @@ func handleRedirect(
 	// extract the value at path slug into a variable
 	slug := r.PathValue("slug")
 
+	// block writers but allow simultaneous readers
+	mu.RLock()
 	// find slug in the store and return url and a boolean ok for status
 	url, ok := store[slug]
+	mu.RUnlock()
 	fmt.Printf("[INFO] fetching url for slug in store\n")
 
 	if !ok {
