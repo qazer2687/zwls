@@ -4,7 +4,7 @@ a zero-width link shortener
 ---
 
 ### about
-Hashes URLs with FNV-1 32-bit and the integer is encoded into base-4 with zero-width unicode characters as digits. The resulting slug is invisible when rendered but remains a valid URL.
+Hashes URLs with FNV-1 32-bit and encodes the resulting integer into base-4 with zero-width unicode characters as digits. The resulting slug is invisible when rendered but remains a valid URL.
 
 ### endpoints
 
