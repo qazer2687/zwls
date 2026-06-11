@@ -67,26 +67,27 @@ func handleShorten(
 	    return
 	}
 
-	// stop overwriting previous hashes on hash collision
-	if storeUrl, ok := store[slug]; ok && storeUrl != url {
-	    fmt.Printf("[WARNING] hash collision detected for url %s, ignoring\n", storeUrl)
-	    http.Error(w, "hash collision", http.StatusConflict)
-	    return
-	}
-
-	fmt.Fprintf(w, slug)
-
 	// block readers and writers
 	mu.Lock()
+	defer mu.Unlock()
 
 	// add limit to the store to prevent OOM
 	if len(store) >= 1000 {
 	    http.Error(w, "store is full", http.StatusServiceUnavailable)
 	    return
 	}
+
+	// stop overwriting previous hashes on hash collision
+	if storeUrl, ok := store[slug]; ok && storeUrl != url {
+	    fmt.Printf("[WARNING] hash collision detected for url %s, ignoring\n", storeUrl)
+	    http.Error(w, "hash collision", http.StatusConflict)
+	    return
+	}
 	
 	store[slug] = url
-	mu.Unlock()
+
+	// return the slug
+	fmt.Fprintf(w, slug)
 	
 	fmt.Printf("[INFO] stored %s\n", url)
 }
