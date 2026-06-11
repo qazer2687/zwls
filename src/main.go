@@ -38,6 +38,8 @@ func handleShorten(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
+	// set a size limit on the body to prevent reading large requests
+	r.Body = http.MaxBytesReader(w, r.Body, 2048)
 	// store the body of the request
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -48,12 +50,19 @@ func handleShorten(
 	// convert byte slice body to a string
 	url := string(body)
 
+	// check if body is empty
+	if url == "" {
+		fmt.Printf("[WARNING] URL is empty, ignoring\n")
+	    http.Error(w, "url is empty", http.StatusBadRequest)
+	    return
+	}
+
 	// convert URL to zwc string
 	urlShortened := encode(hash(url))
 
 	// only allow http and https links
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		fmt.Printf("[WARNING] rejected %s as invalid URL\n", url)
+		fmt.Printf("[WARNING] %s is an invalid URL, ignoring\n", url)
 	    http.Error(w, "invalid url", http.StatusBadRequest)
 	    return
 	}
