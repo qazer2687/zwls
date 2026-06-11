@@ -24,7 +24,10 @@ func main() {
 	mux.HandleFunc("GET /{slug}", handleRedirect)
 
 	fmt.Printf("[INFO] server started on port %s\n", port)
-	http.ListenAndServe(port, mux)
+
+	if err := http.ListenAndServe(port, mux); err != nil {
+	    fmt.Printf("[ERROR] server failed to start: %s\n", err)
+	}
 }
 
 func handleRoot(
@@ -57,15 +60,15 @@ func handleShorten(
 	    return
 	}
 
-	// convert URL to zwc string
-	slug := encode(hash(url))
-
 	// only allow http and https links
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		fmt.Printf("[WARNING] %s is an invalid URL, ignoring\n", url)
 	    http.Error(w, "invalid url", http.StatusBadRequest)
 	    return
 	}
+
+	// convert URL to zwc string
+	slug := encode(hash(url))
 
 	// block readers and writers
 	mu.Lock()
@@ -101,9 +104,9 @@ func handleRedirect(
 
 	// block writers but allow simultaneous readers
 	mu.RLock()
+	defer mu.RUnlock()
 	// find slug in the store and return url and a boolean ok for status
 	url, ok := store[slug]
-	mu.RUnlock()
 	fmt.Printf("[INFO] fetching url for slug in store\n")
 
 	if !ok {
