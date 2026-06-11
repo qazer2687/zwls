@@ -58,7 +58,7 @@ func handleShorten(
 	}
 
 	// convert URL to zwc string
-	urlShortened := encode(hash(url))
+	slug := encode(hash(url))
 
 	// only allow http and https links
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
@@ -67,11 +67,18 @@ func handleShorten(
 	    return
 	}
 
-	fmt.Fprintf(w, urlShortened)
+	// stop overwriting previous hashes on hash collision
+	if storeUrl, ok := store[slug]; ok && storeUrl != url {
+	    fmt.Printf("[WARNING] hash collision detected for url %s, ignoring\n", storeUrl)
+	    http.Error(w, "hash collision", http.StatusConflict)
+	    return
+	}
+
+	fmt.Fprintf(w, slug)
 
 	// block readers and writers
 	mu.Lock()
-	store[urlShortened] = url
+	store[slug] = url
 	mu.Unlock()
 	
 	fmt.Printf("[INFO] stored %s\n", url)
@@ -81,7 +88,6 @@ func handleRedirect(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	fmt.Printf("[INFO] %s %s\n", r.Method, r.URL.Path)
 	// extract the value at path slug into a variable
 	slug := r.PathValue("slug")
 
