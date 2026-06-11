@@ -52,6 +52,9 @@ func handleShorten(
 
 	// convert byte slice body to a string
 	url := string(body)
+	
+	// trim whitespace
+	url = strings.TrimSpace(url)
 
 	// check if body is empty
 	if url == "" {
